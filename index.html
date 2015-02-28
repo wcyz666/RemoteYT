@@ -18,7 +18,7 @@ window.el = function(id){
 window.onload = function(){
 	function MyYT(){
 		this.processQR = function(id, url){
-			el(id).src = "https://chart.googleapis.com/chart?cht=qr&chs=500x500&chl=" + encodeURIComponent(url);
+			el(id).src = "https://chart.googleapis.com/chart?cht=qr&amp;chs=500x500&amp;chl=" + encodeURIComponent(url);
 		}
 	}
 
@@ -104,7 +104,24 @@ window.onload = function(){
 					<div class="panel panel-warning">
 						<div class="panel-heading">YouTube PlayList</div>
 						<div class="panel-body">
-						Panel content
+							<ul class="nav nav-pills nav-stacked">
+							  <li role="presentation" class="active"><a href="#">Home
+								<button type="button" class="close pull-right" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+							  </a></li>
+							  <li role="presentation"><a href="#">Profile
+								<button type="button" class="close pull-right" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+							  </a></li>
+							  <li role="presentation"><a href="#">Messages
+								<button type="button" class="close pull-right" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+							  </a></li>
+							</ul>
+							<br>
+							<form class="form" action="" id="">
+							  <div class="form-group col-xs-10">
+								  <input type="text" class="form-control" id="video_id" placeholder="Video ID or URL">
+							  </div>
+							  <button type="submit" class="btn btn-primary col-xs-2"><i class="fa fa-plus-square"></i></button>
+							</form>
 						</div>
 					</div>	
 				</div>

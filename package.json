@@ -2,9 +2,32 @@
   "name": "asgn2",
   "version": "0.0.0",
   "private": true,
-  "scripts": {
-    "start": "node ./bin/www"
+  "description": "OpenShift Application Assignment 2",
+  "author": {
+    "name": "wcyz666",
+    "email": "wcyz666@126.com"
   },
+  "engines": {
+    "node": ">= 0.6.0",
+    "npm": ">= 1.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openshift/origin-server"
+  },
+  "keywords": [
+    "OpenShift",
+    "Node.js",
+    "application",
+    "openshift"
+  ],
+  "scripts": {
+    "start": "node server.js"
+  },
+  "devDependencies": {},
+  "bundleDependencies": [],
+  "private": true,
+  "main": "server.js",
   "dependencies": {
     "body-parser": "~1.12.0",
     "cookie-parser": "~1.3.4",
@@ -16,3 +39,6 @@
     "socket.io": "^1.3.5"
   }
 }
+
+
+

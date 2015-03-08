@@ -1,3 +1,4 @@
+#!/bin/env node
 var express = require('express');
 var app = express();
 var api = require( './routes/api' );
@@ -6,6 +7,8 @@ var utils = require('./my_modules/utils');
 var path = require('path');
 var roomList = {};
 
+var server_port = process.env.OPENSHIFT_NODEJS_PORT || 3000;
+var server_ip_address = process.env.OPENSHIFT_NODEJS_IP || '127.0.0.1';
 
 var currentRooms = [];
 
@@ -38,7 +41,7 @@ app.use(function (req, res) {
     res.send("Not Found");
 });
 
-var server = app.listen(3000, function () {
+var server = app.listen( server_port, server_ip_address, function () {
 
   var host = server.address().address;
   var port = server.address().port;

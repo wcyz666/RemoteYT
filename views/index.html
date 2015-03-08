@@ -119,7 +119,7 @@ body{
 
 <script>
 
-var socket = io.();
+var socket = io();
 var roomNum = /^.*\/(.*)$/.exec(window.location.href)[1];
 socket.emit("subscribe", roomNum);
 

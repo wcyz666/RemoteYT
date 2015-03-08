@@ -131,12 +131,10 @@ window.qs = function(selector, rg){
     var range = rg || document;
     return range.querySelector(selector);
 };
-
 window.qsa = function(selector, rg){
     var range = rg || document;
     return range.querySelectorAll(selector);
 };
-
 window.createNode = function(tag, child, attrs){
     var outerTag = document.createElement(tag);
     var content;
@@ -187,13 +185,18 @@ Array.prototype.removeAt = function(from, to) {
 NodeList.prototype.forEach = Array.prototype.forEach;
 
 window.getList = function(){
-    return JSON.parse(window.localStorage.getItem("playlist")) || {};
+    var list = JSON.parse(window.localStorage.getItem("playlist")) || {};
+    return list[roomNum] || {};
 };
 window.removeList = function(){
-    window.localStorage.setItem("playlist", JSON.stringify({}));
+    var list = JSON.parse(window.localStorage.getItem("playlist")) || {};
+    delete(list[roomNum]);
+    window.localStorage.setItem("playlist", JSON.stringify(list));
 };
 window.saveList = function(list){
-    window.localStorage.setItem("playlist", JSON.stringify(list));
+    var originList = JSON.parse(window.localStorage.getItem("playlist")) || {};
+    originList[roomNum] = list;
+    window.localStorage.setItem("playlist", JSON.stringify(originList));
 };
 window.removeItem = function (id){
     var list = window.getList();
@@ -380,6 +383,7 @@ function MyYT(){
             outer.current = index;
             if (player)
                 player.loadVideoById( outer.playList.ids[index] );
+            console.log(outer.playList.ids);
             socket.emit("control", {"room": roomNum, "action": "playById", "id": outer.playList.ids[index]});
             return false;
         };

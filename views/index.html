@@ -239,8 +239,15 @@ function MyYT(){
                     player.playVideo();
                 break;
             case "stop":
-                if (player)
+                outer.current = 0;
+                if (player) {
                     player.stopVideo();
+                    player.loadVideoById(outer.playList.ids[0]);
+                    player.pauseVideo();
+                }
+                if (qs('.active', outer.playList))
+                    qs('.active', outer.playList).className = "";
+                outer.playList.list[0].className = "active";
                 break;
             case "mute":
                 if (player)
@@ -301,13 +308,16 @@ function MyYT(){
                     }
                 break;
             case "clearall":
-                window.removeList();
-                outer.current = 0;
-                outer.playList.ids = [];
-                while (outer.playList.firstChild) {
-                    outer.playList.removeChild(outer.playList.firstChild);
+                for (var index in outer.playList.ids) {
+                    if (index != outer.current) {
+                        window.removeItem(outer.playList.ids[index]);
+                        outer.playList.removeChild(outer.playList.list[index]);
+                    }
                 }
+                outer.playList.ids = [outer.playList.ids[outer.current]];
+                outer.current = 0;
                 outer.playList.listBinding();
+
                 break;
         }
     });
@@ -326,8 +336,8 @@ function MyYT(){
                 flag = true;
                 break;
             }
-        if (flag) {
-            var index = outer.playList.getIndexById(data.id);
+        index = outer.playList.getIndexById(data.id);
+        if (flag && outer.playList.list[index].className != "active") {
             window.removeItem(outer.playList.ids[index]);
             outer.playList.ids.removeAt(index);
             var list = outer.playList.childNodes;
@@ -337,12 +347,6 @@ function MyYT(){
                     break;
                 }
 
-            if (outer.playList.list[index].className == "active" && outer.playList.ids.length > 0) {
-                outer.playList.firstElementChild.className = "active";
-                if (player)
-                    player.loadVideoById(outer.playList.ids[0]);
-                outer.current = 0;
-            }
             outer.playList.listBinding();
             index = 0;
             for (index in outer.playList.ids) {
@@ -351,8 +355,6 @@ function MyYT(){
                 index++;
             }
             outer.current = parseInt(index);
-
-            return false;
         }
     });
 
@@ -392,26 +394,22 @@ function MyYT(){
     this.playList.closeEventBinding = function(closeChar) {
         closeChar.onclick = function (event) {
             event.stopPropagation();
-            var item = this.parentNode.parentNode;
             var index = outer.playList.getIndexById(this.parentNode.getAttribute("name"));
-            window.removeItem(outer.playList.ids[index]);
-            socket.emit("remove", {"room": roomNum, "id": outer.playList.ids[index], "playlist": window.getList()});
-            outer.playList.ids.removeAt(index);
-            outer.playList.removeChild(item);
-            if (outer.playList.list[index].className == "active" && outer.playList.ids.length > 0) {
-                outer.playList.firstElementChild.className = "active";
-                if (player)
-                    player.loadVideoById(outer.playList.ids[0]);
-                outer.current = 0;
+            if (outer.playList.list[index].className != "active") {
+                var item = this.parentNode.parentNode;
+                window.removeItem(outer.playList.ids[index]);
+                socket.emit("remove", {"room": roomNum, "id": outer.playList.ids[index], "playlist": window.getList()});
+                outer.playList.ids.removeAt(index);
+                outer.playList.removeChild(item);
+                outer.playList.listBinding();
+                index = 0;
+                for (index in outer.playList.ids) {
+                    if (outer.playList.list[index].className == "active")
+                        break;
+                    index++;
+                }
+                outer.current = parseInt(index);
             }
-            outer.playList.listBinding();
-            index = 0;
-            for (index in outer.playList.ids) {
-                if (outer.playList.list[index].className == "active")
-                    break;
-                index++;
-            }
-            outer.current = parseInt(index);
             return false;
         };
     };
@@ -477,14 +475,17 @@ function MyYT(){
         outer.playList.listBinding();
 
         el("clearall").onclick = function(){
-            window.removeList();
-            outer.current = 0;
-            outer.playList.ids = [];
-            while (outer.playList.firstChild) {
-                outer.playList.removeChild(outer.playList.firstChild);
-            }
-            outer.playList.listBinding();
             socket.emit("control", {"room": roomNum, "action": "clearall"});
+            for (var index in outer.playList.ids) {
+                if (index != outer.current) {
+                    window.removeItem(outer.playList.ids[index]);
+                    outer.playList.removeChild(outer.playList.list[index]);
+                }
+            }
+            outer.playList.ids = [outer.playList.ids[outer.current]];
+            outer.current = 0;
+            outer.playList.listBinding();
+
         };
 
         outer.controllerInit();
@@ -551,8 +552,15 @@ function MyYT(){
             socket.emit("control", {"room": roomNum, "action":"pause"});
         };
         el('stop').onclick = function () {
-            if (player)
+            outer.current = 0;
+            if (player) {
                 player.stopVideo();
+                player.loadVideoById(outer.playList.ids[0]);
+                player.pauseVideo();
+            }
+            if (qs('.active', outer.playList))
+                qs('.active', outer.playList).className = "";
+            outer.playList.list[0].className = "active";
             socket.emit("control", {"room": roomNum, "action":"stop"});
         };
         el('mute').onclick = function () {

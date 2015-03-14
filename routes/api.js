@@ -13,8 +13,9 @@ router.post("/add", function(req, res, next){
         response.setEncoding('utf8');
         if (response.statusCode == 200)
             response.on('data', function (chunk) {
-                var info = JSON.parse(chunk);
-                res.json({"status": response.statusCode, "title": info.title});
+                var info = JSON.parse(chunk.replace(/\\U\d*/g, ""));
+                var title =  info.title;
+                res.json({"status": response.statusCode, "title": title});
             });
         else
             response.on('data', function (e) {

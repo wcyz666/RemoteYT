@@ -400,7 +400,6 @@ function MyYT(){
                 if (isNaN(_index)) continue;
                 if (outer.playList.list[index].className == "active")
                     break;
-                index++;
             }
             outer.current = index;
         }
@@ -456,7 +455,6 @@ function MyYT(){
                     if (isNaN(_index)) continue;
                     if (outer.playList.list[index].className == "active")
                         break;
-                    index++;
                 }
                 outer.current = index;
             }
@@ -476,7 +474,6 @@ function MyYT(){
             if (isNaN(_index)) continue;
             if (outer.playList.ids[index] == id)
                 break;
-            index++;
         }
         return index;
     };

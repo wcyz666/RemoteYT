@@ -367,68 +367,6 @@ function MyYT(){
         return data.join('&');
     };
 
-    this.playList.init = function(){
-
-        outer.playList.generateHTML(outer.playList.getList());
-
-        outer.playList.listBinding();
-
-        el("clearall").onclick = function(){
-            for (var _index in outer.playList.ids) {
-                var index = parseInt(_index);
-                if (isNaN(_index)) continue;
-                if (index != outer.current) {
-                    window.removeItem(outer.playList.ids[index]);
-                    outer.playList.removeChild(outer.playList.list[index]);
-                }
-            }
-            outer.playList.ids = [outer.playList.ids[outer.current]];
-            outer.current = 0;
-            outer.playList.listBinding();
-            socket.emit("control", {"room": roomNum, "action": "clearall"});
-        };
-
-        outer.controllerInit();
-
-        outer.playList.form.onsubmit = function(){
-            var id = qs("form input").value;
-            if (id.indexOf('http') != -1)
-                id = /^[^?]*\?v=(.*)$/i.exec(id)[1];
-            qs("form input").value = "";
-            for (var _index in outer.playList.ids){
-                var index = parseInt(_index);
-                if (isNaN(_index)) continue;
-                if (id == outer.playList.ids[index]) {
-                    alert("Duplicate id!");
-                    return false;
-                }
-            }
-            window.ajax({
-                method: 'POST',
-                url: outer.playList.form.getAttribute('action'),
-                data: outer.encodeParam({"vid": id}),
-                success: function(json){
-                    json = JSON.parse(json);
-                    if (json["status"] == 200){
-                        outer.addNewVideo(id, json["title"]);
-                        socket.emit("add", {"room": roomNum, "id": id, "title": json["title"], "playlist": window.getList()});
-                    }
-                    else{
-                        if (!outer.playList.showError){
-                            //var warning = window.createNode("div", "Incorrect Video ID", {"class": "alert alert-danger", "role": "alert"});
-                            //outer.playList.appendChild(warning);
-                            alert("Incorrect Video ID");
-                        }
-                    }
-                }
-            });
-            return false;
-        };
-
-        if (outer.playList.ids.length > 0)
-            outer.playList.firstElementChild.className = "active";
-    };
-
     this.addNewVideo = function(id, title){
         var localList = {};
         localList[id] = title;
@@ -446,83 +384,6 @@ function MyYT(){
 
     this.processQR = function(id, url){
         el(id).src = "https://chart.googleapis.com/chart?cht=qr&chs=500x500&chl=" + encodeURIComponent(url);
-    };
-
-    this.controllerInit = function(){
-        el('play').onclick = function () {
-            if (player)
-                player.playVideo();
-            socket.emit("control", {"room": roomNum, "action":"play"});
-        };
-        el('pause').onclick = function () {
-            if (player)
-                player.pauseVideo();
-            socket.emit("control", {"room": roomNum, "action":"pause"});
-        };
-        el('stop').onclick = function () {
-            outer.current = 0;
-            if (player) {
-                player.stopVideo();
-                player.loadVideoById(outer.playList.ids[0]);
-                player.pauseVideo();
-            }
-            if (qs('.active', outer.playList))
-                qs('.active', outer.playList).className = "";
-            if (outer.playList.list.length > 0)
-                outer.playList.list[0].className = "active";
-            socket.emit("control", {"room": roomNum, "action":"stop"});
-        };
-        el('mute').onclick = function () {
-            if (player)
-                player.mute();
-            socket.emit("control", {"room": roomNum, "action":"mute"});
-        };
-        el('unmute').onclick = function () {
-            if (player)
-                player.unMute();
-            socket.emit("control", {"room": roomNum, "action":"unmute"});
-        };
-        el('rewind').onclick = function () {
-            if (player) {
-                currentTime = player.getCurrentTime();
-                player.seekTo(currentTime - 2.0);
-            }
-            socket.emit("control", {"room": roomNum, "action":"rewind"});
-        };
-        el('forward').onclick = function () {
-            if (player) {
-                currentTime = player.getCurrentTime();
-                player.seekTo(currentTime + 2.0);
-            }
-            socket.emit("control", {"room": roomNum, "action":"forward"});
-        };
-        el('next').onclick = function () {
-
-            outer.current++;
-            if (outer.current == outer.playList.ids.length)
-                outer.current = 0;
-            if (player) {
-                player.loadVideoById(outer.playList.ids[outer.current]);
-            }
-            if (qs('.active', outer.playList))
-                qs('.active', outer.playList).className = "";
-            if (outer.playList.list.length > 0)
-                outer.playList.list[outer.current].className = "active";
-            socket.emit("control", {"room": roomNum, "action":"next"});
-        };
-        el('prev').onclick = function () {
-            outer.current--;
-            if (outer.current < 0)
-                outer.current = outer.playList.list.length - 1;
-            if (player) {
-                player.loadVideoById(outer.playList.ids[outer.current]);
-            }
-            if (qs('.active', outer.playList))
-                qs('.active', outer.playList).className = "";
-            if (outer.playList.list.length > 0)
-                outer.playList.list[outer.current].className = "active";
-            socket.emit("control", {"room": roomNum, "action":"prev"});
-        }
     };
 
     this.createPlayer = function(){
@@ -580,6 +441,305 @@ function MyYT(){
 }
 
 var myTY;
+MyYT.prototype.playList = qs("ul.nav");
+var outer = MyYT.prototype;
+
+MyYT.prototype.init = function() {
+    outer.playList.init();
+};
+
+MyYT.prototype.processQR = function(id, url){
+    el(id).src = "https://chart.googleapis.com/chart?cht=qr&chs=500x500&chl=" + encodeURIComponent(url);
+};
+
+MyYT.prototype.controllerInit = function(){
+    el('play').onclick = function () {
+        if (player)
+            player.playVideo();
+        socket.emit("control", {"room": roomNum, "action":"play"});
+    };
+    el('pause').onclick = function () {
+        if (player)
+            player.pauseVideo();
+        socket.emit("control", {"room": roomNum, "action":"pause"});
+    };
+    el('stop').onclick = function () {
+        outer.current = 0;
+        if (player) {
+            player.stopVideo();
+            player.loadVideoById(outer.playList.ids[0]);
+            player.pauseVideo();
+        }
+        if (qs('.active', outer.playList))
+            qs('.active', outer.playList).className = "";
+        if (outer.playList.list.length > 0)
+            outer.playList.list[0].className = "active";
+        socket.emit("control", {"room": roomNum, "action":"stop"});
+    };
+    el('mute').onclick = function () {
+        if (player)
+            player.mute();
+        socket.emit("control", {"room": roomNum, "action":"mute"});
+    };
+    el('unmute').onclick = function () {
+        if (player)
+            player.unMute();
+        socket.emit("control", {"room": roomNum, "action":"unmute"});
+    };
+    el('rewind').onclick = function () {
+        if (player) {
+            currentTime = player.getCurrentTime();
+            player.seekTo(currentTime - 2.0);
+        }
+        socket.emit("control", {"room": roomNum, "action":"rewind"});
+    };
+    el('forward').onclick = function () {
+        if (player) {
+            currentTime = player.getCurrentTime();
+            player.seekTo(currentTime + 2.0);
+        }
+        socket.emit("control", {"room": roomNum, "action":"forward"});
+    };
+    el('next').onclick = function () {
+
+        outer.current++;
+        if (outer.current == outer.playList.ids.length)
+            outer.current = 0;
+        if (player) {
+            player.loadVideoById(outer.playList.ids[outer.current]);
+        }
+        if (qs('.active', outer.playList))
+            qs('.active', outer.playList).className = "";
+        if (outer.playList.list.length > 0)
+            outer.playList.list[outer.current].className = "active";
+        socket.emit("control", {"room": roomNum, "action":"next"});
+    };
+    el('prev').onclick = function () {
+        outer.current--;
+        if (outer.current < 0)
+            outer.current = outer.playList.list.length - 1;
+        if (player) {
+            player.loadVideoById(outer.playList.ids[outer.current]);
+        }
+        if (qs('.active', outer.playList))
+            qs('.active', outer.playList).className = "";
+        if (outer.playList.list.length > 0)
+            outer.playList.list[outer.current].className = "active";
+        socket.emit("control", {"room": roomNum, "action":"prev"});
+    }
+};
+
+MyYT.prototype.playList.init = function(){
+
+    outer.playList.generateHTML(outer.playList.getList());
+
+    outer.playList.listBinding();
+
+    el("clearall").onclick = function(){
+        for (var _index in outer.playList.ids) {
+            var index = parseInt(_index);
+            if (isNaN(_index)) continue;
+            if (index != outer.current) {
+                window.removeItem(outer.playList.ids[index]);
+                outer.playList.removeChild(outer.playList.list[index]);
+            }
+        }
+        outer.playList.ids = [outer.playList.ids[outer.current]];
+        outer.current = 0;
+        outer.playList.listBinding();
+        socket.emit("control", {"room": roomNum, "action": "clearall"});
+    };
+
+    outer.controllerInit();
+
+    outer.playList.form.onsubmit = function(){
+        var id = qs("form input").value;
+        if (id.indexOf('http') != -1)
+            id = /^[^?]*\?v=(.*)$/i.exec(id)[1];
+        qs("form input").value = "";
+        for (var _index in outer.playList.ids){
+            var index = parseInt(_index);
+            if (isNaN(_index)) continue;
+            if (id == outer.playList.ids[index]) {
+                alert("Duplicate id!");
+                return false;
+            }
+        }
+        window.ajax({
+            method: 'POST',
+            url: outer.playList.form.getAttribute('action'),
+            data: outer.encodeParam({"vid": id}),
+            success: function(json){
+                json = JSON.parse(json);
+                if (json["status"] == 200){
+                    outer.addNewVideo(id, json["title"]);
+                    socket.emit("add", {"room": roomNum, "id": id, "title": json["title"], "playlist": window.getList()});
+                }
+                else{
+                    if (!outer.playList.showError){
+                        //var warning = window.createNode("div", "Incorrect Video ID", {"class": "alert alert-danger", "role": "alert"});
+                        //outer.playList.appendChild(warning);
+                        alert("Incorrect Video ID");
+                    }
+                }
+            }
+        });
+        return false;
+    };
+
+    if (outer.playList.ids.length > 0)
+        outer.playList.firstElementChild.className = "active";
+};
+
+socket.on("control", function(data){
+	console.log(data);
+	switch (data.action){
+		case "pause":
+			if (player)
+				player.pauseVideo();
+			break;
+		case "play":
+			if (player)
+				player.playVideo();
+			break;
+		case "stop":
+			outer.current = 0;
+			if (player) {
+				player.stopVideo();
+				player.loadVideoById(outer.playList.ids[0]);
+				player.pauseVideo();
+			}
+			if (qs('.active', outer.playList))
+				qs('.active', outer.playList).className = "";
+			if (outer.playList.list.length > 0)
+				outer.playList.list[0].className = "active";
+			break;
+		case "mute":
+			if (player)
+				player.mute();
+			break;
+		case "unmute":
+			if (player)
+				player.unMute();
+			break;
+		case "rewind":
+			if (player) {
+				currentTime = player.getCurrentTime();
+				player.seekTo(currentTime - 2.0);
+			}
+			break;
+		case "forward":
+			if (player) {
+				currentTime = player.getCurrentTime();
+				player.seekTo(currentTime + 2.0);
+			}
+			break;
+		case "next":
+			outer.current++;
+			if (outer.current == outer.playList.ids.length)
+				outer.current = 0;
+			if (player) {
+				player.loadVideoById(outer.playList.ids[outer.current]);
+			}
+			if (qs('.active', outer.playList))
+				qs('.active', outer.playList).className = "";
+			if (outer.playList.list.length > 0)
+				outer.playList.list[outer.current].className = "active";
+			break;
+		case "prev":
+			outer.current--;
+			if (outer.current < 0)
+				outer.current = outer.playList.list.length - 1;
+			if (player) {
+				player.loadVideoById(outer.playList.ids[outer.current]);
+			}
+			if (qs('.active', outer.playList))
+				qs('.active', outer.playList).className = "";
+			if (outer.playList.list.length > 0)
+				outer.playList.list[outer.current].className = "active";
+
+			break;
+		case "playById":
+			var flag = false;
+			console.log(player, data.id);
+			for (var _index in outer.playList.ids){
+				var index = parseInt(_index);
+				if (isNaN(_index)) continue;
+				if (data.id == outer.playList.ids[index]) {
+					flag = true;
+				}
+			}
+			if (!flag)
+				break;
+			if (player)
+				player.loadVideoById(data.id);
+			if (qs('.active', outer.playList))
+				qs('.active', outer.playList).className = "";
+			var index = outer.playList.getIndexById(data.id);
+			outer.current = index;
+			var list = outer.playList.childNodes;
+			for (var li in list)
+				if (list[li].firstElementChild && list[li].firstElementChild.getAttribute("name") == data.id) {
+					list[li].className = "active";
+					break;
+				}
+			break;
+		case "clearall":
+			for (var _index in outer.playList.ids) {
+				var index = parseInt(_index);
+				if (isNaN(_index)) continue;
+				if (index != outer.current) {
+					window.removeItem(outer.playList.ids[index]);
+					outer.playList.removeChild(outer.playList.list[index]);
+				}
+			}
+			outer.playList.ids = [outer.playList.ids[outer.current]];
+			outer.current = 0;
+			outer.playList.listBinding();
+
+			break;
+	}
+});
+socket.on("add", function (data) {
+	console.log(data);
+	if (!(data.id in outer.playList.ids)){
+		outer.addNewVideo(data.id, data.title);
+	}
+});
+socket.on("remove", function (data) {
+	console.log(data);
+	var flag = false;
+	for (var _index in outer.playList.ids) {
+		var index = parseInt(_index);
+		if (isNaN(_index)) continue;
+		if (outer.playList.ids[index] == data.id) {
+			flag = true;
+			break;
+		}
+	}
+	index = outer.playList.getIndexById(data.id);
+	if (flag && outer.playList.list[index].className != "active") {
+		window.removeItem(outer.playList.ids[index]);
+		outer.playList.ids.removeAt(index);
+		var list = outer.playList.childNodes;
+		for (var li in list)
+			if (list[li].firstElementChild && list[li].firstElementChild.getAttribute("name") == data.id) {
+				outer.playList.removeChild(list[li]);
+				break;
+			}
+
+		outer.playList.listBinding();
+		index = 0;
+		for (var _index in outer.playList.ids) {
+			index = parseInt(_index);
+			if (isNaN(_index)) continue;
+			if (outer.playList.list[index].className == "active")
+				break;
+		}
+		outer.current = index;
+	}
+});
+
 
 socket.on("suback", function(data){
     var clientCount = Object.keys(data.clientCount).length;

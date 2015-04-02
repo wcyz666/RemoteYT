@@ -1,6 +1,3 @@
-/**
- * Created by lenovo on 2015/3/29.
- */
 var socket = io();
 var roomNum = /^.*\/(.*)$/.exec(window.location.href)[1];
 socket.emit("subscribe", roomNum);
@@ -130,162 +127,13 @@ window.ajax = function(opt) {
 
 
 function MyYT(){
-    var outer = this;
-    this.playList = qs("ul.nav");
+
     this.playList.form = qs("form");
     this.current = 0;
     this.playList.ids = getVideoIds();
     this.playList.showError = false;
     this.playList.getList = window.getList;
 
-    socket.on("control", function(data){
-        console.log(data);
-        switch (data.action){
-            case "pause":
-                if (player)
-                    player.pauseVideo();
-                break;
-            case "play":
-                if (player)
-                    player.playVideo();
-                break;
-            case "stop":
-                outer.current = 0;
-                if (player) {
-                    player.stopVideo();
-                    player.loadVideoById(outer.playList.ids[0]);
-                    player.pauseVideo();
-                }
-                if (qs('.active', outer.playList))
-                    qs('.active', outer.playList).className = "";
-                if (outer.playList.list.length > 0)
-                    outer.playList.list[0].className = "active";
-                break;
-            case "mute":
-                if (player)
-                    player.mute();
-                break;
-            case "unmute":
-                if (player)
-                    player.unMute();
-                break;
-            case "rewind":
-                if (player) {
-                    currentTime = player.getCurrentTime();
-                    player.seekTo(currentTime - 2.0);
-                }
-                break;
-            case "forward":
-                if (player) {
-                    currentTime = player.getCurrentTime();
-                    player.seekTo(currentTime + 2.0);
-                }
-                break;
-            case "next":
-                outer.current++;
-                if (outer.current == outer.playList.ids.length)
-                    outer.current = 0;
-                if (player) {
-                    player.loadVideoById(outer.playList.ids[outer.current]);
-                }
-                if (qs('.active', outer.playList))
-                    qs('.active', outer.playList).className = "";
-                if (outer.playList.list.length > 0)
-                    outer.playList.list[outer.current].className = "active";
-                break;
-            case "prev":
-                outer.current--;
-                if (outer.current < 0)
-                    outer.current = outer.playList.list.length - 1;
-                if (player) {
-                    player.loadVideoById(outer.playList.ids[outer.current]);
-                }
-                if (qs('.active', outer.playList))
-                    qs('.active', outer.playList).className = "";
-                if (outer.playList.list.length > 0)
-                    outer.playList.list[outer.current].className = "active";
-
-                break;
-            case "playById":
-                var flag = false;
-                console.log(player, data.id);
-                for (var _index in outer.playList.ids){
-                    var index = parseInt(_index);
-                    if (isNaN(_index)) continue;
-                    if (data.id == outer.playList.ids[index]) {
-                        flag = true;
-                    }
-                }
-                if (!flag)
-                    break;
-                if (player)
-                    player.loadVideoById(data.id);
-                if (qs('.active', outer.playList))
-                    qs('.active', outer.playList).className = "";
-                var index = outer.playList.getIndexById(data.id);
-                outer.current = index;
-                var list = outer.playList.childNodes;
-                for (var li in list)
-                    if (list[li].firstElementChild && list[li].firstElementChild.getAttribute("name") == data.id) {
-                        list[li].className = "active";
-                        break;
-                    }
-                break;
-            case "clearall":
-                for (var _index in outer.playList.ids) {
-                    var index = parseInt(_index);
-                    if (isNaN(_index)) continue;
-                    if (index != outer.current) {
-                        window.removeItem(outer.playList.ids[index]);
-                        outer.playList.removeChild(outer.playList.list[index]);
-                    }
-                }
-                outer.playList.ids = [outer.playList.ids[outer.current]];
-                outer.current = 0;
-                outer.playList.listBinding();
-
-                break;
-        }
-    });
-    socket.on("add", function (data) {
-        console.log(data);
-        if (!(data.id in outer.playList.ids)){
-            outer.addNewVideo(data.id, data.title);
-        }
-    });
-    socket.on("remove", function (data) {
-        console.log(data);
-        var flag = false;
-        for (var _index in outer.playList.ids) {
-            var index = parseInt(_index);
-            if (isNaN(_index)) continue;
-            if (outer.playList.ids[index] == data.id) {
-                flag = true;
-                break;
-            }
-        }
-        index = outer.playList.getIndexById(data.id);
-        if (flag && outer.playList.list[index].className != "active") {
-            window.removeItem(outer.playList.ids[index]);
-            outer.playList.ids.removeAt(index);
-            var list = outer.playList.childNodes;
-            for (var li in list)
-                if (list[li].firstElementChild && list[li].firstElementChild.getAttribute("name") == data.id) {
-                    outer.playList.removeChild(list[li]);
-                    break;
-                }
-
-            outer.playList.listBinding();
-            index = 0;
-            for (var _index in outer.playList.ids) {
-                index = parseInt(_index);
-                if (isNaN(_index)) continue;
-                if (outer.playList.list[index].className == "active")
-                    break;
-            }
-            outer.current = index;
-        }
-    });
 
     this.playList.generateLi = function(id, title){
         var closeChar = createNode("span", "×", {"aria-hidden" : true});
@@ -580,6 +428,158 @@ function MyYT(){
 }
 
 var myTY;
+var MyYT.prototype.playList = qs("ul.nav");
+var outer = MyYT.prototype.playList;
+
+socket.on("control", function(data){
+	console.log(data);
+	switch (data.action){
+		case "pause":
+			if (player)
+				player.pauseVideo();
+			break;
+		case "play":
+			if (player)
+				player.playVideo();
+			break;
+		case "stop":
+			outer.current = 0;
+			if (player) {
+				player.stopVideo();
+				player.loadVideoById(outer.playList.ids[0]);
+				player.pauseVideo();
+			}
+			if (qs('.active', outer.playList))
+				qs('.active', outer.playList).className = "";
+			if (outer.playList.list.length > 0)
+				outer.playList.list[0].className = "active";
+			break;
+		case "mute":
+			if (player)
+				player.mute();
+			break;
+		case "unmute":
+			if (player)
+				player.unMute();
+			break;
+		case "rewind":
+			if (player) {
+				currentTime = player.getCurrentTime();
+				player.seekTo(currentTime - 2.0);
+			}
+			break;
+		case "forward":
+			if (player) {
+				currentTime = player.getCurrentTime();
+				player.seekTo(currentTime + 2.0);
+			}
+			break;
+		case "next":
+			outer.current++;
+			if (outer.current == outer.playList.ids.length)
+				outer.current = 0;
+			if (player) {
+				player.loadVideoById(outer.playList.ids[outer.current]);
+			}
+			if (qs('.active', outer.playList))
+				qs('.active', outer.playList).className = "";
+			if (outer.playList.list.length > 0)
+				outer.playList.list[outer.current].className = "active";
+			break;
+		case "prev":
+			outer.current--;
+			if (outer.current < 0)
+				outer.current = outer.playList.list.length - 1;
+			if (player) {
+				player.loadVideoById(outer.playList.ids[outer.current]);
+			}
+			if (qs('.active', outer.playList))
+				qs('.active', outer.playList).className = "";
+			if (outer.playList.list.length > 0)
+				outer.playList.list[outer.current].className = "active";
+
+			break;
+		case "playById":
+			var flag = false;
+			console.log(player, data.id);
+			for (var _index in outer.playList.ids){
+				var index = parseInt(_index);
+				if (isNaN(_index)) continue;
+				if (data.id == outer.playList.ids[index]) {
+					flag = true;
+				}
+			}
+			if (!flag)
+				break;
+			if (player)
+				player.loadVideoById(data.id);
+			if (qs('.active', outer.playList))
+				qs('.active', outer.playList).className = "";
+			var index = outer.playList.getIndexById(data.id);
+			outer.current = index;
+			var list = outer.playList.childNodes;
+			for (var li in list)
+				if (list[li].firstElementChild && list[li].firstElementChild.getAttribute("name") == data.id) {
+					list[li].className = "active";
+					break;
+				}
+			break;
+		case "clearall":
+			for (var _index in outer.playList.ids) {
+				var index = parseInt(_index);
+				if (isNaN(_index)) continue;
+				if (index != outer.current) {
+					window.removeItem(outer.playList.ids[index]);
+					outer.playList.removeChild(outer.playList.list[index]);
+				}
+			}
+			outer.playList.ids = [outer.playList.ids[outer.current]];
+			outer.current = 0;
+			outer.playList.listBinding();
+
+			break;
+	}
+});
+socket.on("add", function (data) {
+	console.log(data);
+	if (!(data.id in outer.playList.ids)){
+		outer.addNewVideo(data.id, data.title);
+	}
+});
+socket.on("remove", function (data) {
+	console.log(data);
+	var flag = false;
+	for (var _index in outer.playList.ids) {
+		var index = parseInt(_index);
+		if (isNaN(_index)) continue;
+		if (outer.playList.ids[index] == data.id) {
+			flag = true;
+			break;
+		}
+	}
+	index = outer.playList.getIndexById(data.id);
+	if (flag && outer.playList.list[index].className != "active") {
+		window.removeItem(outer.playList.ids[index]);
+		outer.playList.ids.removeAt(index);
+		var list = outer.playList.childNodes;
+		for (var li in list)
+			if (list[li].firstElementChild && list[li].firstElementChild.getAttribute("name") == data.id) {
+				outer.playList.removeChild(list[li]);
+				break;
+			}
+
+		outer.playList.listBinding();
+		index = 0;
+		for (var _index in outer.playList.ids) {
+			index = parseInt(_index);
+			if (isNaN(_index)) continue;
+			if (outer.playList.list[index].className == "active")
+				break;
+		}
+		outer.current = index;
+	}
+});
+
 
 socket.on("suback", function(data){
     var clientCount = Object.keys(data.clientCount).length;

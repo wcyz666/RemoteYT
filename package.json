@@ -1,8 +1,8 @@
 {
-  "name": "asgn2",
+  "name": "RemoteYouTube",
   "version": "0.0.0",
   "private": true,
-  "description": "OpenShift Application Assignment 2",
+  "description": "OpenShift Application",
   "author": {
     "name": "wcyz666",
     "email": "wcyz666@126.com"

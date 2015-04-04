@@ -4,7 +4,28 @@
 var socket = io();
 var roomNum = /^.*\/(.*)$/.exec(window.location.href)[1];
 socket.emit("subscribe", roomNum);
-var player;
+var dummyPlayer = {
+    playVideo: function () {
+    },
+    stopVideo: function () {
+    },
+    pauseVideo: function () {
+    },
+    loadVideoById: function () {
+    },
+    mute: function () {
+    },
+    unMute: function () {
+    },
+    getCurrentTime: function () {
+    },
+    seekTo: function () {
+    },
+    seek: function () {
+    }
+};
+
+var player = dummyPlayer;
 
 window.el = function(id, rg){
     var range = rg || document;
@@ -142,52 +163,41 @@ function MyYT(){
         console.log(data);
         switch (data.action){
             case "pause":
-                if (player)
-                    player.pauseVideo();
+                player.pauseVideo();
                 break;
             case "play":
-                if (player)
-                    player.playVideo();
+                player.playVideo();
                 break;
             case "stop":
                 outer.current = 0;
-                if (player) {
-                    player.stopVideo();
-                    player.loadVideoById(outer.playList.ids[0]);
-                    player.pauseVideo();
-                }
+                player.stopVideo();
+                player.loadVideoById(outer.playList.ids[0]);
+                player.pauseVideo();
                 if (qs('.active', outer.playList))
                     qs('.active', outer.playList).className = "";
                 if (outer.playList.list.length > 0)
                     outer.playList.list[0].className = "active";
                 break;
             case "mute":
-                if (player)
-                    player.mute();
+                player.mute();
                 break;
             case "unmute":
-                if (player)
-                    player.unMute();
+                player.unMute();
                 break;
             case "rewind":
-                if (player) {
-                    currentTime = player.getCurrentTime();
-                    player.seekTo(currentTime - 2.0);
-                }
+                currentTime = player.getCurrentTime();
+                player.seekTo(currentTime - 2.0);
                 break;
             case "forward":
-                if (player) {
-                    currentTime = player.getCurrentTime();
-                    player.seekTo(currentTime + 2.0);
-                }
+                currentTime = player.getCurrentTime();
+                player.seekTo(currentTime + 2.0);
                 break;
             case "next":
                 outer.current++;
                 if (outer.current == outer.playList.ids.length)
                     outer.current = 0;
-                if (player) {
-                    player.loadVideoById(outer.playList.ids[outer.current]);
-                }
+                player.loadVideoById(outer.playList.ids[outer.current]);
+
                 if (qs('.active', outer.playList))
                     qs('.active', outer.playList).className = "";
                 if (outer.playList.list.length > 0)
@@ -197,9 +207,8 @@ function MyYT(){
                 outer.current--;
                 if (outer.current < 0)
                     outer.current = outer.playList.list.length - 1;
-                if (player) {
-                    player.loadVideoById(outer.playList.ids[outer.current]);
-                }
+                player.loadVideoById(outer.playList.ids[outer.current]);
+
                 if (qs('.active', outer.playList))
                     qs('.active', outer.playList).className = "";
                 if (outer.playList.list.length > 0)
@@ -218,8 +227,7 @@ function MyYT(){
                 }
                 if (!flag)
                     break;
-                if (player)
-                    player.loadVideoById(data.id);
+                player.loadVideoById(data.id);
                 if (qs('.active', outer.playList))
                     qs('.active', outer.playList).className = "";
                 var index = outer.playList.getIndexById(data.id);
@@ -312,8 +320,7 @@ function MyYT(){
             li.className = "active";
             var index = outer.playList.getIndexById( li.firstElementChild.getAttribute("name"));
             outer.current = index;
-            if (player)
-                player.loadVideoById( outer.playList.ids[index] );
+            player.loadVideoById( outer.playList.ids[index] );
             console.log(outer.playList.ids);
             socket.emit("control", {"room": roomNum, "action": "playById", "id": outer.playList.ids[index]});
             return false;
@@ -436,7 +443,7 @@ function MyYT(){
         outer.playList.listBinding();
         window.saveItem(id, title);
         outer.playList.ids.push(id);
-        if (player == null && window.innerWidth >= 992)
+        if (player == dummyPlayer && window.innerWidth >= 992)
             player = outer.createPlayer();
     };
 
@@ -450,22 +457,18 @@ function MyYT(){
 
     this.controllerInit = function(){
         el('play').onclick = function () {
-            if (player)
-                player.playVideo();
+            player.playVideo();
             socket.emit("control", {"room": roomNum, "action":"play"});
         };
         el('pause').onclick = function () {
-            if (player)
-                player.pauseVideo();
+            player.pauseVideo();
             socket.emit("control", {"room": roomNum, "action":"pause"});
         };
         el('stop').onclick = function () {
             outer.current = 0;
-            if (player) {
-                player.stopVideo();
-                player.loadVideoById(outer.playList.ids[0]);
-                player.pauseVideo();
-            }
+            player.stopVideo();
+            player.loadVideoById(outer.playList.ids[0]);
+            player.pauseVideo();
             if (qs('.active', outer.playList))
                 qs('.active', outer.playList).className = "";
             if (outer.playList.list.length > 0)
@@ -473,27 +476,21 @@ function MyYT(){
             socket.emit("control", {"room": roomNum, "action":"stop"});
         };
         el('mute').onclick = function () {
-            if (player)
-                player.mute();
+            player.mute();
             socket.emit("control", {"room": roomNum, "action":"mute"});
         };
         el('unmute').onclick = function () {
-            if (player)
-                player.unMute();
+            player.unMute();
             socket.emit("control", {"room": roomNum, "action":"unmute"});
         };
         el('rewind').onclick = function () {
-            if (player) {
-                currentTime = player.getCurrentTime();
-                player.seekTo(currentTime - 2.0);
-            }
+            currentTime = player.getCurrentTime();
+            player.seekTo(currentTime - 2.0);
             socket.emit("control", {"room": roomNum, "action":"rewind"});
         };
         el('forward').onclick = function () {
-            if (player) {
-                currentTime = player.getCurrentTime();
-                player.seekTo(currentTime + 2.0);
-            }
+            currentTime = player.getCurrentTime();
+            player.seekTo(currentTime + 2.0);
             socket.emit("control", {"room": roomNum, "action":"forward"});
         };
         el('next').onclick = function () {
@@ -501,9 +498,7 @@ function MyYT(){
             outer.current++;
             if (outer.current == outer.playList.ids.length)
                 outer.current = 0;
-            if (player) {
-                player.loadVideoById(outer.playList.ids[outer.current]);
-            }
+            player.loadVideoById(outer.playList.ids[outer.current]);
             if (qs('.active', outer.playList))
                 qs('.active', outer.playList).className = "";
             if (outer.playList.list.length > 0)
@@ -514,9 +509,7 @@ function MyYT(){
             outer.current--;
             if (outer.current < 0)
                 outer.current = outer.playList.list.length - 1;
-            if (player) {
-                player.loadVideoById(outer.playList.ids[outer.current]);
-            }
+            player.loadVideoById(outer.playList.ids[outer.current]);
             if (qs('.active', outer.playList))
                 qs('.active', outer.playList).className = "";
             if (outer.playList.list.length > 0)
@@ -543,8 +536,7 @@ function MyYT(){
                                 outer.current++;
                                 if (outer.current == outer.playList.ids.length)
                                     outer.current = 0;
-                                if (player)
-                                    player.loadVideoById(outer.playList.ids[outer.current]);
+                                player.loadVideoById(outer.playList.ids[outer.current]);
                                 if (qs('.active', outer.playList))
                                     qs('.active', outer.playList).className = "";
                                 if (outer.playList.list.length > 0)
@@ -572,7 +564,7 @@ function MyYT(){
             })
         }
         else{
-            player = null;
+            player = dummyPlayer;
         }
         return player;
     };
@@ -615,11 +607,11 @@ function onYouTubeIframeAPIReady() {
 
 window.addEventListener( 'resize', function() {
     if ( window.innerWidth >= 992 ) {
-        if ( player === null ) {
+        if ( player == dummyPlayer ) {
             player = myYT.createPlayer();
         }
     } else {
         player.destroy(); // Destroy the video player
-        player = null;
+        player = dummyPlayer;
     }
 });

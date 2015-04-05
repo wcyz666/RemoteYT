@@ -240,14 +240,12 @@ function MyYT(){
                     }
                 break;
             case "clearall":
-                for (var _index in outer.playList.ids) {
-                    var index = parseInt(_index);
-                    if (isNaN(_index)) continue;
-                    if (index != outer.current) {
+                outer.playList.ids.forEach(function(item, index, array){
+                    if (index != outer.current && typeof item == "string") {
                         window.removeItem(outer.playList.ids[index]);
                         outer.playList.removeChild(outer.playList.list[index]);
                     }
-                }
+                });
                 outer.playList.ids = [outer.playList.ids[outer.current]];
                 outer.current = 0;
                 outer.playList.listBinding();
@@ -381,14 +379,14 @@ function MyYT(){
         outer.playList.listBinding();
 
         el("clearall").onclick = function(){
-            for (var _index in outer.playList.ids) {
-                var index = parseInt(_index);
-                if (isNaN(_index)) continue;
-                if (index != outer.current) {
+
+            outer.playList.ids.forEach(function(item, index, array){
+                if (index != outer.current && typeof item == "string") {
                     window.removeItem(outer.playList.ids[index]);
                     outer.playList.removeChild(outer.playList.list[index]);
                 }
-            }
+            });
+
             outer.playList.ids = [outer.playList.ids[outer.current]];
             outer.current = 0;
             outer.playList.listBinding();
@@ -402,13 +400,11 @@ function MyYT(){
             if (id.indexOf('http') != -1)
                 id = /^[^?]*\?v=(.*)$/i.exec(id)[1];
             qs("form input").value = "";
-            for (var _index in outer.playList.ids){
-                var index = parseInt(_index);
-                if (isNaN(_index)) continue;
-                if (id == outer.playList.ids[index]) {
-                    alert("Duplicate id!");
-                    return false;
-                }
+            if (outer.playList.ids.some(function(item, index, array){
+                    return id == outer.playList.ids[index];
+                })) {
+                alert("Duplicate id!");
+                return false;
             }
             window.ajax({
                 method: 'POST',

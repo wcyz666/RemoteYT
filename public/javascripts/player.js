@@ -27,48 +27,109 @@ var dummyPlayer = {
 
 var player = dummyPlayer;
 
-window.el = function(id, rg){
-    var range = rg || document;
-    return range.getElementById(id);
-};
-window.qs = function(selector, rg){
-    var range = rg || document;
-    return range.querySelector(selector);
-};
-window.qsa = function(selector, rg){
-    var range = rg || document;
-    return range.querySelectorAll(selector);
-};
-window.createNode = function(tag, child, attrs){
-    var outerTag = document.createElement(tag);
-    var content;
-    if (typeof child === "string"){
-        content = document.createTextNode(child);
-        outerTag.appendChild(content);
-    }
-    else {
-        if (child instanceof Array){
-            for (var _index in child) {
-                var index = parseInt(_index);
-                if (isNaN(_index)) continue;
-                content = child[index];
-                if (typeof content === "string") {
-                    content = document.createTextNode(content);
+var myLib = {
+    el : function(id, rg){
+        var range = rg || document;
+        return range.getElementById(id);
+    },
+    qs : function(selector, rg){
+        var range = rg || document;
+        return range.querySelector(selector);
+    },
+    qsa : function(selector, rg){
+        var range = rg || document;
+        return range.querySelectorAll(selector);
+    },
+    createNode : function(tag, child, attrs){
+        var outerTag = document.createElement(tag);
+        var content;
+        if (typeof child === "string"){
+            content = document.createTextNode(child);
+            outerTag.appendChild(content);
+        }
+        else {
+            if (child instanceof Array){
+                for (var _index in child) {
+                    var index = parseInt(_index);
+                    if (isNaN(_index)) continue;
+                    content = child[index];
+                    if (typeof content === "string") {
+                        content = document.createTextNode(content);
+                    }
+                    else if (typeof content === "function")
+                        continue;
+                    outerTag.appendChild(content);
                 }
-                else if (typeof content === "function")
-                    continue;
-                outerTag.appendChild(content);
+            }
+            else{
+                outerTag.appendChild(child);
             }
         }
-        else{
-            outerTag.appendChild(child);
-        }
-    }
 
-    for (var key in attrs) {
-        outerTag.setAttribute(key, attrs[key]);
+        for (var key in attrs) {
+            outerTag.setAttribute(key, attrs[key]);
+        }
+        return outerTag;
+    },
+    getList : function(){
+        var list = JSON.parse(window.localStorage.getItem("playlist")) || {};
+        return list[roomNum] || {};
+    },
+    removeList : function(){
+        var list = JSON.parse(window.localStorage.getItem("playlist")) || {};
+        delete(list[roomNum]);
+        window.localStorage.setItem("playlist", JSON.stringify(list));
+    },
+    saveList : function(list){
+        var originList = JSON.parse(window.localStorage.getItem("playlist")) || {};
+        originList[roomNum] = list;
+        window.localStorage.setItem("playlist", JSON.stringify(originList));
+    },
+    removeItem : function (id){
+        var list = this.getList();
+        delete(list[id]);
+        this.saveList(list);
+    },
+    saveItem : function (id, title){
+        var list = this.getList();
+        list[id] = title;
+        this.saveList(list);
+    },
+    getVideoIds : function(){
+        var list = this.getList();
+        var ids = [];
+        for (var id in list)
+            ids.push(id);
+        return ids;
+    },
+    ajax : function(opt) {
+        opt = opt || {};
+        var xhr = (window.XMLHttpRequest)
+                ? new XMLHttpRequest()
+                : new ActiveXObject("Microsoft.XMLHTTP"),
+            async = opt.async !== false,
+            success = opt.success || null,
+            error = opt.error || function(){alert('AJAX Error: ' + this.status)};
+
+        xhr.open(opt.method || 'GET', opt.url || '', async);
+
+        if (opt.method == 'POST')
+            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+
+        if (async)
+            xhr.onreadystatechange = function(){
+                if (xhr.readyState == 4) {
+                    var status = xhr.status, response = xhr.responseText;
+                    if ((status >= 200 && status < 300) || status == 304 || status == 1223) {
+                        success && success(response);
+                    } else if (status >= 500)
+                        error();
+                }
+            };
+        xhr.onerror = function(){error()};
+
+        xhr.send(opt.data || null);
     }
-    return outerTag;
 };
 
 Node.prototype.appendChildren = function(children){
@@ -89,75 +150,16 @@ Array.prototype.removeAt = function(from, to) {
 };
 NodeList.prototype.forEach = Array.prototype.forEach;
 
-window.getList = function(){
-    var list = JSON.parse(window.localStorage.getItem("playlist")) || {};
-    return list[roomNum] || {};
-};
-window.removeList = function(){
-    var list = JSON.parse(window.localStorage.getItem("playlist")) || {};
-    delete(list[roomNum]);
-    window.localStorage.setItem("playlist", JSON.stringify(list));
-};
-window.saveList = function(list){
-    var originList = JSON.parse(window.localStorage.getItem("playlist")) || {};
-    originList[roomNum] = list;
-    window.localStorage.setItem("playlist", JSON.stringify(originList));
-};
-window.removeItem = function (id){
-    var list = window.getList();
-    delete(list[id]);
-    window.saveList(list);
-};
-window.saveItem = function (id, title){
-    var list = window.getList();
-    list[id] = title;
-    window.saveList(list);
-};
-window.getVideoIds = function(){
-    var list = window.getList();
-    var ids = [];
-    for (var id in list)
-        ids.push(id);
-    return ids;
-};
-window.ajax = function(opt) {
-    opt = opt || {};
-    var xhr = (window.XMLHttpRequest)
-            ? new XMLHttpRequest()
-            : new ActiveXObject("Microsoft.XMLHTTP"),
-        async = opt.async !== false,
-        success = opt.success || null,
-        error = opt.error || function(){alert('AJAX Error: ' + this.status)};
-
-    xhr.open(opt.method || 'GET', opt.url || '', async);
-
-    if (opt.method == 'POST')
-        xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-
-    if (async)
-        xhr.onreadystatechange = function(){
-            if (xhr.readyState == 4) {
-                var status = xhr.status, response = xhr.responseText;
-                if ((status >= 200 && status < 300) || status == 304 || status == 1223) {
-                    success && success(response);
-                } else if (status >= 500)
-                    error();
-            }
-        };
-    xhr.onerror = function(){error()};
-
-    xhr.send(opt.data || null);
-};
 
 
 function MyYT(){
     var outer = this;
-    this.playList = qs("ul.nav");
-    this.playList.form = qs("form");
+    this.playList = myLib.qs("ul.nav");
+    this.playList.form = myLib.qs("form");
     this.current = 0;
-    this.playList.ids = getVideoIds();
+    this.playList.ids = myLib.getVideoIds();
     this.playList.showError = false;
-    this.playList.getList = window.getList;
+    this.playList.getList = myLib.getList;
 
     socket.on("control", function(data){
         console.log(data);
@@ -173,8 +175,8 @@ function MyYT(){
                 player.stopVideo();
                 player.loadVideoById(outer.playList.ids[0]);
                 player.pauseVideo();
-                if (qs('.active', outer.playList))
-                    qs('.active', outer.playList).className = "";
+                if (myLib.qs('.active', outer.playList))
+                    myLib.qs('.active', outer.playList).className = "";
                 if (outer.playList.list.length > 0)
                     outer.playList.list[0].className = "active";
                 break;
@@ -198,8 +200,8 @@ function MyYT(){
                     outer.current = 0;
                 player.loadVideoById(outer.playList.ids[outer.current]);
 
-                if (qs('.active', outer.playList))
-                    qs('.active', outer.playList).className = "";
+                if (myLib.qs('.active', outer.playList))
+                    myLib.qs('.active', outer.playList).className = "";
                 if (outer.playList.list.length > 0)
                     outer.playList.list[outer.current].className = "active";
                 break;
@@ -209,8 +211,8 @@ function MyYT(){
                     outer.current = outer.playList.list.length - 1;
                 player.loadVideoById(outer.playList.ids[outer.current]);
 
-                if (qs('.active', outer.playList))
-                    qs('.active', outer.playList).className = "";
+                if (myLib.qs('.active', outer.playList))
+                    myLib.qs('.active', outer.playList).className = "";
                 if (outer.playList.list.length > 0)
                     outer.playList.list[outer.current].className = "active";
 
@@ -228,8 +230,8 @@ function MyYT(){
                 if (!flag)
                     break;
                 player.loadVideoById(data.id);
-                if (qs('.active', outer.playList))
-                    qs('.active', outer.playList).className = "";
+                if (myLib.qs('.active', outer.playList))
+                    myLib.qs('.active', outer.playList).className = "";
                 var index = outer.playList.getIndexById(data.id);
                 outer.current = index;
                 var list = outer.playList.childNodes;
@@ -244,7 +246,7 @@ function MyYT(){
                     var index = parseInt(_index);
                     if (isNaN(_index)) continue;
                     if (index != outer.current) {
-                        window.removeItem(outer.playList.ids[index]);
+                        myLib.removeItem(outer.playList.ids[index]);
                         outer.playList.removeChild(outer.playList.list[index]);
                     }
                 }
@@ -274,7 +276,7 @@ function MyYT(){
         }
         index = outer.playList.getIndexById(data.id);
         if (flag && outer.playList.list[index].className != "active") {
-            window.removeItem(outer.playList.ids[index]);
+            myLib.removeItem(outer.playList.ids[index]);
             outer.playList.ids.removeAt(index);
             var list = outer.playList.childNodes;
             for (var li in list)
@@ -296,10 +298,10 @@ function MyYT(){
     });
 
     this.playList.generateLi = function(id, title){
-        var closeChar = createNode("span", "×", {"aria-hidden" : true});
-        var closeBtn = createNode("button", closeChar, {"class": "close pull-right", "type": "button"});
-        var arch = createNode("a", [id + " : " + title, closeBtn], {"name": id});
-        var li = createNode("li", arch, {"role": "presentation"});
+        var closeChar = myLib.createNode("span", "×", {"aria-hidden" : true});
+        var closeBtn =  myLib.createNode("button", closeChar, {"class": "close pull-right", "type": "button"});
+        var arch =  myLib.createNode("a", [id + " : " + title, closeBtn], {"name": id});
+        var li =  myLib.createNode("li", arch, {"role": "presentation"});
         outer.playList.closeEventBinding(closeBtn);
         li.style.cursor = "pointer";
         outer.playList.listEventBinding(li);
@@ -315,8 +317,8 @@ function MyYT(){
 
     this.playList.listEventBinding = function(li){
         li.onclick = function(){
-            if (qs('.active', outer.playList))
-                qs('.active', outer.playList).className = "";
+            if (myLib.qs('.active', outer.playList))
+                myLib.qs('.active', outer.playList).className = "";
             li.className = "active";
             var index = outer.playList.getIndexById( li.firstElementChild.getAttribute("name"));
             outer.current = index;
@@ -333,8 +335,8 @@ function MyYT(){
             var index = outer.playList.getIndexById(this.parentNode.getAttribute("name"));
             if (outer.playList.list[index].className != "active") {
                 var item = this.parentNode.parentNode;
-                window.removeItem(outer.playList.ids[index]);
-                socket.emit("remove", {"room": roomNum, "id": outer.playList.ids[index], "playlist": window.getList()});
+                myLib.removeItem(outer.playList.ids[index]);
+                socket.emit("remove", {"room": roomNum, "id": outer.playList.ids[index], "playlist": myLib.getList()});
                 outer.playList.ids.removeAt(index);
                 outer.playList.removeChild(item);
                 outer.playList.listBinding();
@@ -352,8 +354,8 @@ function MyYT(){
     };
 
     this.playList.listBinding = function () {
-        outer.playList.removeChar = qsa("span[aria-hidden]", outer.playList);
-        outer.playList.list = qsa("ul.nav li");
+        outer.playList.removeChar = myLib.qsa("span[aria-hidden]", outer.playList);
+        outer.playList.list = myLib.qsa("ul.nav li");
     };
 
     this.playList.getIndexById = function (id){
@@ -380,12 +382,12 @@ function MyYT(){
 
         outer.playList.listBinding();
 
-        el("clearall").onclick = function(){
+        myLib.el("clearall").onclick = function(){
             for (var _index in outer.playList.ids) {
                 var index = parseInt(_index);
                 if (isNaN(_index)) continue;
                 if (index != outer.current) {
-                    window.removeItem(outer.playList.ids[index]);
+                    myLib.removeItem(outer.playList.ids[index]);
                     outer.playList.removeChild(outer.playList.list[index]);
                 }
             }
@@ -398,10 +400,10 @@ function MyYT(){
         outer.controllerInit();
 
         outer.playList.form.onsubmit = function(){
-            var id = qs("form input").value;
+            var id = myLib.qs("form input").value;
             if (id.indexOf('http') != -1)
                 id = /^[^?]*\?v=(.*)$/i.exec(id)[1];
-            qs("form input").value = "";
+            myLib.qs("form input").value = "";
             for (var _index in outer.playList.ids){
                 var index = parseInt(_index);
                 if (isNaN(_index)) continue;
@@ -410,7 +412,7 @@ function MyYT(){
                     return false;
                 }
             }
-            window.ajax({
+            myLib.ajax({
                 method: 'POST',
                 url: outer.playList.form.getAttribute('action'),
                 data: outer.encodeParam({"vid": id}),
@@ -418,11 +420,11 @@ function MyYT(){
                     json = JSON.parse(json);
                     if (json["status"] == 200){
                         outer.addNewVideo(id, json["title"]);
-                        socket.emit("add", {"room": roomNum, "id": id, "title": json["title"], "playlist": window.getList()});
+                        socket.emit("add", {"room": roomNum, "id": id, "title": json["title"], "playlist": myLib.getList()});
                     }
                     else{
                         if (!outer.playList.showError){
-                            //var warning = window.createNode("div", "Incorrect Video ID", {"class": "alert alert-danger", "role": "alert"});
+                            //var warning = myLib.createNode("div", "Incorrect Video ID", {"class": "alert alert-danger", "role": "alert"});
                             //outer.playList.appendChild(warning);
                             alert("Incorrect Video ID");
                         }
@@ -441,7 +443,7 @@ function MyYT(){
         localList[id] = title;
         outer.playList.generateHTML(localList);
         outer.playList.listBinding();
-        window.saveItem(id, title);
+        myLib.saveItem(id, title);
         outer.playList.ids.push(id);
         if (player == dummyPlayer && window.innerWidth >= 992)
             player = outer.createPlayer();
@@ -452,66 +454,66 @@ function MyYT(){
     };
 
     this.processQR = function(id, url){
-        el(id).src = "https://chart.googleapis.com/chart?cht=qr&chs=500x500&chl=" + encodeURIComponent(url);
+        myLib.el(id).src = "https://chart.googleapis.com/chart?cht=qr&chs=500x500&chl=" + encodeURIComponent(url);
     };
 
     this.controllerInit = function(){
-        el('play').onclick = function () {
+        myLib.el('play').onclick = function () {
             player.playVideo();
             socket.emit("control", {"room": roomNum, "action":"play"});
         };
-        el('pause').onclick = function () {
+        myLib.el('pause').onclick = function () {
             player.pauseVideo();
             socket.emit("control", {"room": roomNum, "action":"pause"});
         };
-        el('stop').onclick = function () {
+        myLib.el('stop').onclick = function () {
             outer.current = 0;
             player.stopVideo();
             player.loadVideoById(outer.playList.ids[0]);
             player.pauseVideo();
-            if (qs('.active', outer.playList))
-                qs('.active', outer.playList).className = "";
+            if (myLib.qs('.active', outer.playList))
+                myLib.qs('.active', outer.playList).className = "";
             if (outer.playList.list.length > 0)
                 outer.playList.list[0].className = "active";
             socket.emit("control", {"room": roomNum, "action":"stop"});
         };
-        el('mute').onclick = function () {
+        myLib.el('mute').onclick = function () {
             player.mute();
             socket.emit("control", {"room": roomNum, "action":"mute"});
         };
-        el('unmute').onclick = function () {
+        myLib.el('unmute').onclick = function () {
             player.unMute();
             socket.emit("control", {"room": roomNum, "action":"unmute"});
         };
-        el('rewind').onclick = function () {
+        myLib.el('rewind').onclick = function () {
             currentTime = player.getCurrentTime();
             player.seekTo(currentTime - 2.0);
             socket.emit("control", {"room": roomNum, "action":"rewind"});
         };
-        el('forward').onclick = function () {
+        myLib.el('forward').onclick = function () {
             currentTime = player.getCurrentTime();
             player.seekTo(currentTime + 2.0);
             socket.emit("control", {"room": roomNum, "action":"forward"});
         };
-        el('next').onclick = function () {
+        myLib.el('next').onclick = function () {
 
             outer.current++;
             if (outer.current == outer.playList.ids.length)
                 outer.current = 0;
             player.loadVideoById(outer.playList.ids[outer.current]);
-            if (qs('.active', outer.playList))
-                qs('.active', outer.playList).className = "";
+            if (myLib.qs('.active', outer.playList))
+                myLib.qs('.active', outer.playList).className = "";
             if (outer.playList.list.length > 0)
                 outer.playList.list[outer.current].className = "active";
             socket.emit("control", {"room": roomNum, "action":"next"});
         };
-        el('prev').onclick = function () {
+        myLib.el('prev').onclick = function () {
             outer.current--;
             if (outer.current < 0)
                 outer.current = outer.playList.list.length - 1;
             player.loadVideoById(outer.playList.ids[outer.current]);
-            if (qs('.active', outer.playList))
-                qs('.active', outer.playList).className = "";
+            if (myLib.qs('.active', outer.playList))
+                myLib.qs('.active', outer.playList).className = "";
             if (outer.playList.list.length > 0)
                 outer.playList.list[outer.current].className = "active";
             socket.emit("control", {"room": roomNum, "action":"prev"});
@@ -537,8 +539,8 @@ function MyYT(){
                                 if (outer.current == outer.playList.ids.length)
                                     outer.current = 0;
                                 player.loadVideoById(outer.playList.ids[outer.current]);
-                                if (qs('.active', outer.playList))
-                                    qs('.active', outer.playList).className = "";
+                                if (myLib.qs('.active', outer.playList))
+                                    myLib.qs('.active', outer.playList).className = "";
                                 if (outer.playList.list.length > 0)
                                     outer.playList.list[outer.current].className = "active";
                                 console.log("ended");
@@ -583,13 +585,13 @@ socket.on("suback", function(data){
     if (clientCount == 1) {
         myYT = new MyYT();
         myYT.init();
-        socket.emit("synclist", {"room": roomNum, "playlist": window.getList()});
+        socket.emit("synclist", {"room": roomNum, "playlist": myLib.getList()});
         myYT.processQR("qrcode", window.location.href);
     }
     else{
-        window.removeList();
+        myLib.removeList();
         socket.on("synclist", function (data) {
-            window.saveList(data);
+            myLib.saveList(data);
             console.log(data);
             myYT = new MyYT();
             myYT.init();

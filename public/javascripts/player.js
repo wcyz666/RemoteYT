@@ -41,24 +41,25 @@ window.qsa = function(selector, rg){
 };
 window.createNode = function(tag, child, attrs){
     var outerTag = document.createElement(tag);
-    var content;
     if (typeof child === "string"){
-        content = document.createTextNode(child);
+        var content = document.createTextNode(child);
         outerTag.appendChild(content);
     }
     else {
         if (child instanceof Array){
-            for (var _index in child) {
-                var index = parseInt(_index);
-                if (isNaN(_index)) continue;
-                content = child[index];
-                if (typeof content === "string") {
-                    content = document.createTextNode(content);
+            child.forEach(function(item, index, array){
+                    switch (typeof  item){
+                        case "string":
+                            item = document.createTextNode(item);
+                            break;
+                        case "function":
+                            return;
+                        default:
+                            break;
+                    }
+                    outerTag.appendChild(item);
                 }
-                else if (typeof content === "function")
-                    continue;
-                outerTag.appendChild(content);
-            }
+            );
         }
         else{
             outerTag.appendChild(child);
@@ -218,26 +219,15 @@ function MyYT(){
             case "playById":
                 var flag = false;
                 console.log(player, data.id);
-                for (var _index in outer.playList.ids){
-                    var index = parseInt(_index);
-                    if (isNaN(_index)) continue;
-                    if (data.id == outer.playList.ids[index]) {
-                        flag = true;
-                    }
-                }
-                if (!flag)
-                    break;
                 player.loadVideoById(data.id);
                 if (qs('.active', outer.playList))
                     qs('.active', outer.playList).className = "";
                 var index = outer.playList.getIndexById(data.id);
                 outer.current = index;
-                var list = outer.playList.childNodes;
-                for (var li in list)
-                    if (list[li].firstElementChild && list[li].firstElementChild.getAttribute("name") == data.id) {
-                        list[li].className = "active";
-                        break;
-                    }
+                outer.playList.childNodes.forEach(function(item, index, array){
+                    if (item.firstElementChild && item.firstElementChild.getAttribute("name") == data.id)
+                        item.className = "active";
+                });
                 break;
             case "clearall":
                 outer.playList.ids.forEach(function(item, index, array){
@@ -261,35 +251,26 @@ function MyYT(){
     });
     socket.on("remove", function (data) {
         console.log(data);
-        var flag = false;
-        for (var _index in outer.playList.ids) {
-            var index = parseInt(_index);
-            if (isNaN(_index)) continue;
-            if (outer.playList.ids[index] == data.id) {
-                flag = true;
-                break;
+
+        var flag = outer.playList.ids.some(function(item, index, array){
+                return item === data.id;
             }
-        }
+        );
         index = outer.playList.getIndexById(data.id);
         if (flag && outer.playList.list[index].className != "active") {
             window.removeItem(outer.playList.ids[index]);
             outer.playList.ids.removeAt(index);
             var list = outer.playList.childNodes;
-            for (var li in list)
-                if (list[li].firstElementChild && list[li].firstElementChild.getAttribute("name") == data.id) {
-                    outer.playList.removeChild(list[li]);
-                    break;
-                }
-
+            outer.playList.childNodes.forEach(function(item, index, array){
+                if (item.firstElementChild && item.firstElementChild.getAttribute("name") == data.id)
+                    outer.playList.removeChild(item);
+            });
             outer.playList.listBinding();
-            index = 0;
-            for (var _index in outer.playList.ids) {
-                index = parseInt(_index);
-                if (isNaN(_index)) continue;
-                if (outer.playList.list[index].className == "active")
-                    break;
-            }
-            outer.current = index;
+
+            outer.playList.list.forEach(function(item, index, array){
+                if (item.className == "active")
+                    outer.current = index;
+            });
         }
     });
 
@@ -336,14 +317,10 @@ function MyYT(){
                 outer.playList.ids.removeAt(index);
                 outer.playList.removeChild(item);
                 outer.playList.listBinding();
-                index = 0;
-                for (var _index in outer.playList.ids) {
-                    index = parseInt(_index);
-                    if (isNaN(_index)) continue;
-                    if (outer.playList.list[index].className == "active")
-                        break;
-                }
-                outer.current = index;
+                outer.playList.list.forEach(function(item, index, array){
+                    if (item.className == "active")
+                        outer.current = index;
+                });
             }
             return false;
         };
@@ -355,14 +332,7 @@ function MyYT(){
     };
 
     this.playList.getIndexById = function (id){
-        var index = 0;
-        for (var _index in outer.playList.ids){
-            index = parseInt(_index);
-            if (isNaN(_index)) continue;
-            if (outer.playList.ids[index] == id)
-                break;
-        }
-        return index;
+        return outer.playList.ids.indexOf(id);
     };
 
     this.encodeParam = function(obj) {
@@ -566,8 +536,6 @@ function MyYT(){
     };
 
 }
-
-var myTY;
 
 socket.on("suback", function(data){
     var clientCount = Object.keys(data.clientCount).length;

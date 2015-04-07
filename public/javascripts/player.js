@@ -220,36 +220,23 @@ function MyYT(){
             case "playById":
                 var flag = false;
                 console.log(player, data.id);
-                for (var _index in outer.playList.ids){
-                    var index = parseInt(_index);
-                    if (isNaN(_index)) continue;
-                    if (data.id == outer.playList.ids[index]) {
-                        flag = true;
-                    }
-                }
-                if (!flag)
-                    break;
                 player.loadVideoById(data.id);
                 if (myLib.qs('.active', outer.playList))
                     myLib.qs('.active', outer.playList).className = "";
                 var index = outer.playList.getIndexById(data.id);
                 outer.current = index;
-                var list = outer.playList.childNodes;
-                for (var li in list)
-                    if (list[li].firstElementChild && list[li].firstElementChild.getAttribute("name") == data.id) {
-                        list[li].className = "active";
-                        break;
-                    }
+                outer.playList.childNodes.forEach(function(item, index, array){
+                    if (item.firstElementChild && item.firstElementChild.getAttribute("name") == data.id)
+                        item.className = "active";
+                });
                 break;
             case "clearall":
-                for (var _index in outer.playList.ids) {
-                    var index = parseInt(_index);
-                    if (isNaN(_index)) continue;
-                    if (index != outer.current) {
+                outer.playList.ids.forEach(function(item, index, array){
+                    if (index != outer.current && typeof item == "string") {
                         myLib.removeItem(outer.playList.ids[index]);
                         outer.playList.removeChild(outer.playList.list[index]);
                     }
-                }
+                });
                 outer.playList.ids = [outer.playList.ids[outer.current]];
                 outer.current = 0;
                 outer.playList.listBinding();
@@ -265,35 +252,26 @@ function MyYT(){
     });
     socket.on("remove", function (data) {
         console.log(data);
-        var flag = false;
-        for (var _index in outer.playList.ids) {
-            var index = parseInt(_index);
-            if (isNaN(_index)) continue;
-            if (outer.playList.ids[index] == data.id) {
-                flag = true;
-                break;
+
+        var flag = outer.playList.ids.some(function(item, index, array){
+                return item === data.id;
             }
-        }
+        );
         index = outer.playList.getIndexById(data.id);
         if (flag && outer.playList.list[index].className != "active") {
             myLib.removeItem(outer.playList.ids[index]);
             outer.playList.ids.removeAt(index);
             var list = outer.playList.childNodes;
-            for (var li in list)
-                if (list[li].firstElementChild && list[li].firstElementChild.getAttribute("name") == data.id) {
-                    outer.playList.removeChild(list[li]);
-                    break;
-                }
-
+            outer.playList.childNodes.forEach(function(item, index, array){
+                if (item.firstElementChild && item.firstElementChild.getAttribute("name") == data.id)
+                    outer.playList.removeChild(item);
+            });
             outer.playList.listBinding();
-            index = 0;
-            for (var _index in outer.playList.ids) {
-                index = parseInt(_index);
-                if (isNaN(_index)) continue;
-                if (outer.playList.list[index].className == "active")
-                    break;
-            }
-            outer.current = index;
+
+            outer.playList.list.forEach(function(item, index, array){
+                if (item.className == "active")
+                    outer.current = index;
+            });
         }
     });
 
@@ -340,14 +318,10 @@ function MyYT(){
                 outer.playList.ids.removeAt(index);
                 outer.playList.removeChild(item);
                 outer.playList.listBinding();
-                index = 0;
-                for (var _index in outer.playList.ids) {
-                    index = parseInt(_index);
-                    if (isNaN(_index)) continue;
-                    if (outer.playList.list[index].className == "active")
-                        break;
-                }
-                outer.current = index;
+                outer.playList.list.forEach(function(item, index, array){
+                    if (item.className == "active")
+                        outer.current = index;
+                });
             }
             return false;
         };
@@ -359,14 +333,7 @@ function MyYT(){
     };
 
     this.playList.getIndexById = function (id){
-        var index = 0;
-        for (var _index in outer.playList.ids){
-            index = parseInt(_index);
-            if (isNaN(_index)) continue;
-            if (outer.playList.ids[index] == id)
-                break;
-        }
-        return index;
+        return outer.playList.ids.indexOf(id);
     };
 
     this.encodeParam = function(obj) {
@@ -383,14 +350,13 @@ function MyYT(){
         outer.playList.listBinding();
 
         myLib.el("clearall").onclick = function(){
-            for (var _index in outer.playList.ids) {
-                var index = parseInt(_index);
-                if (isNaN(_index)) continue;
-                if (index != outer.current) {
+            outer.playList.ids.forEach(function(item, index, array){
+                if (index != outer.current && typeof item == "string") {
                     myLib.removeItem(outer.playList.ids[index]);
                     outer.playList.removeChild(outer.playList.list[index]);
                 }
-            }
+            });
+
             outer.playList.ids = [outer.playList.ids[outer.current]];
             outer.current = 0;
             outer.playList.listBinding();
@@ -403,14 +369,13 @@ function MyYT(){
             var id = myLib.qs("form input").value;
             if (id.indexOf('http') != -1)
                 id = /^[^?]*\?v=(.*)$/i.exec(id)[1];
+
             myLib.qs("form input").value = "";
-            for (var _index in outer.playList.ids){
-                var index = parseInt(_index);
-                if (isNaN(_index)) continue;
-                if (id == outer.playList.ids[index]) {
-                    alert("Duplicate id!");
-                    return false;
-                }
+            if (outer.playList.ids.some(function(item, index, array){
+                    return id == outer.playList.ids[index];
+                })) {
+                alert("Duplicate id!");
+                return false;
             }
             myLib.ajax({
                 method: 'POST',
@@ -572,8 +537,6 @@ function MyYT(){
     };
 
 }
-
-var myTY;
 
 socket.on("suback", function(data){
     var clientCount = Object.keys(data.clientCount).length;

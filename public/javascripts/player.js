@@ -137,20 +137,8 @@ Node.prototype.appendChildren = function(children){
         this.appendChild(child);
     }
 };
-String.prototype.escapeHTML = function() {
-    return this.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-};
-String.prototype.escapeQuotes = function() {
-    return this.replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-};
-Array.prototype.removeAt = function(from, to) {
-    var rest = this.slice((to || from) + 1 || this.length);
-    this.length = from < 0 ? this.length + from : from;
-    return this.push.apply(this, rest);
-};
+
 NodeList.prototype.forEach = Array.prototype.forEach;
-
-
 
 function MyYT(){
     var outer = this;
@@ -260,7 +248,7 @@ function MyYT(){
         index = outer.playList.getIndexById(data.id);
         if (flag && outer.playList.list[index].className != "active") {
             myLib.removeItem(outer.playList.ids[index]);
-            outer.playList.ids.removeAt(index);
+            outer.playList.ids.splice(index, 1);
             var list = outer.playList.childNodes;
             outer.playList.childNodes.forEach(function(item, index, array){
                 if (item.firstElementChild && item.firstElementChild.getAttribute("name") == data.id)
@@ -315,7 +303,7 @@ function MyYT(){
                 var item = this.parentNode.parentNode;
                 myLib.removeItem(outer.playList.ids[index]);
                 socket.emit("remove", {"room": roomNum, "id": outer.playList.ids[index], "playlist": myLib.getList()});
-                outer.playList.ids.removeAt(index);
+                outer.playList.ids.splice(index, 1);
                 outer.playList.removeChild(item);
                 outer.playList.listBinding();
                 outer.playList.list.forEach(function(item, index, array){

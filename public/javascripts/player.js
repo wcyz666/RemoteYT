@@ -22,6 +22,9 @@ var dummyPlayer = {
     seekTo: function () {
     },
     seek: function () {
+    },
+    destroy: function(){
+
     }
 };
 
@@ -356,7 +359,7 @@ function MyYT(){
         outer.playList.form.onsubmit = function(){
             var id = myLib.qs("form input").value;
             if (id.indexOf('http') != -1)
-                id = /^[^?]*\?v=(.*)$/i.exec(id)[1];
+                id = /^[^?]*\?v=(.*)$/i.exec(id.trim())[1];
 
             myLib.qs("form input").value = "";
             if (outer.playList.ids.some(function(item, index, array){
@@ -411,66 +414,77 @@ function MyYT(){
     };
 
     this.controllerInit = function(){
-        myLib.el('play').onclick = function () {
-            player.playVideo();
-            socket.emit("control", {"room": roomNum, "action":"play"});
-        };
-        myLib.el('pause').onclick = function () {
-            player.pauseVideo();
-            socket.emit("control", {"room": roomNum, "action":"pause"});
-        };
-        myLib.el('stop').onclick = function () {
-            outer.current = 0;
-            player.stopVideo();
-            player.loadVideoById(outer.playList.ids[0]);
-            player.pauseVideo();
-            if (myLib.qs('.active', outer.playList))
-                myLib.qs('.active', outer.playList).className = "";
-            if (outer.playList.list.length > 0)
-                outer.playList.list[0].className = "active";
-            socket.emit("control", {"room": roomNum, "action":"stop"});
-        };
-        myLib.el('mute').onclick = function () {
-            player.mute();
-            socket.emit("control", {"room": roomNum, "action":"mute"});
-        };
-        myLib.el('unmute').onclick = function () {
-            player.unMute();
-            socket.emit("control", {"room": roomNum, "action":"unmute"});
-        };
-        myLib.el('rewind').onclick = function () {
-            currentTime = player.getCurrentTime();
-            player.seekTo(currentTime - 2.0);
-            socket.emit("control", {"room": roomNum, "action":"rewind"});
-        };
-        myLib.el('forward').onclick = function () {
-            currentTime = player.getCurrentTime();
-            player.seekTo(currentTime + 2.0);
-            socket.emit("control", {"room": roomNum, "action":"forward"});
-        };
-        myLib.el('next').onclick = function () {
 
-            outer.current++;
-            if (outer.current == outer.playList.ids.length)
-                outer.current = 0;
-            player.loadVideoById(outer.playList.ids[outer.current]);
-            if (myLib.qs('.active', outer.playList))
-                myLib.qs('.active', outer.playList).className = "";
-            if (outer.playList.list.length > 0)
-                outer.playList.list[outer.current].className = "active";
-            socket.emit("control", {"room": roomNum, "action":"next"});
-        };
-        myLib.el('prev').onclick = function () {
-            outer.current--;
-            if (outer.current < 0)
-                outer.current = outer.playList.list.length - 1;
-            player.loadVideoById(outer.playList.ids[outer.current]);
-            if (myLib.qs('.active', outer.playList))
-                myLib.qs('.active', outer.playList).className = "";
-            if (outer.playList.list.length > 0)
-                outer.playList.list[outer.current].className = "active";
-            socket.emit("control", {"room": roomNum, "action":"prev"});
-        }
+        //Use event delegate instead of event binding
+
+        myLib.el("control-panel").addEventListener("click", function(event){
+            var target = event.target || window.event.target;
+            var targetId = target.id || target.parentNode.id;
+            console.log(target);
+            switch (targetId){
+                case "play":
+                    player.playVideo();
+                    socket.emit("control", {"room": roomNum, "action":"play"});
+                    break;
+                case "pause":
+                    player.pauseVideo();
+                    socket.emit("control", {"room": roomNum, "action":"pause"});
+                    break;
+                case "stop":
+                    outer.current = 0;
+                    player.stopVideo();
+                    player.loadVideoById(outer.playList.ids[0]);
+                    player.pauseVideo();
+                    if (myLib.qs('.active', outer.playList))
+                        myLib.qs('.active', outer.playList).className = "";
+                    if (outer.playList.list.length > 0)
+                        outer.playList.list[0].className = "active";
+                    socket.emit("control", {"room": roomNum, "action":"stop"});
+                    break;
+                case "mute":
+                    player.mute();
+                    socket.emit("control", {"room": roomNum, "action":"mute"});
+                    break;
+                case "unmute":
+                    player.unMute();
+                    socket.emit("control", {"room": roomNum, "action":"unmute"});
+                    break;
+                case "rewind":
+                    currentTime = player.getCurrentTime();
+                    player.seekTo(currentTime - 2.0);
+                    socket.emit("control", {"room": roomNum, "action":"rewind"});
+                    break;
+                case "forward":
+                    currentTime = player.getCurrentTime();
+                    player.seekTo(currentTime + 2.0);
+                    socket.emit("control", {"room": roomNum, "action":"forward"});
+                    break;
+                case "next":
+                    outer.current++;
+                    if (outer.current == outer.playList.ids.length)
+                        outer.current = 0;
+                    player.loadVideoById(outer.playList.ids[outer.current]);
+                    if (myLib.qs('.active', outer.playList))
+                        myLib.qs('.active', outer.playList).className = "";
+                    if (outer.playList.list.length > 0)
+                        outer.playList.list[outer.current].className = "active";
+                    socket.emit("control", {"room": roomNum, "action":"next"});
+                    break;
+                case "prev":
+                    outer.current--;
+                    if (outer.current < 0)
+                        outer.current = outer.playList.list.length - 1;
+                    player.loadVideoById(outer.playList.ids[outer.current]);
+                    if (myLib.qs('.active', outer.playList))
+                        myLib.qs('.active', outer.playList).className = "";
+                    if (outer.playList.list.length > 0)
+                        outer.playList.list[outer.current].className = "active";
+                    socket.emit("control", {"room": roomNum, "action":"prev"});
+                    break;
+            };
+
+        }, false);
+
     };
 
     this.createPlayer = function(){
@@ -488,16 +502,10 @@ function MyYT(){
                     'onStateChange': function onPlayerStateChange(event){
                         switch( event.data ) {
                             case YT.PlayerState.ENDED:
-                                outer.current++;
-                                if (outer.current == outer.playList.ids.length)
-                                    outer.current = 0;
-                                player.loadVideoById(outer.playList.ids[outer.current]);
-                                if (myLib.qs('.active', outer.playList))
-                                    myLib.qs('.active', outer.playList).className = "";
-                                if (outer.playList.list.length > 0)
-                                    outer.playList.list[outer.current].className = "active";
-                                console.log("ended");
-                                socket.emit("control", {"room": roomNum, "action":"next"});
+                                var nextBtn = myLib.el("next");
+                                var eventClick = new MouseEvent("click", {"bubbles": true});
+                                console.log(eventClick);
+                                nextBtn.dispatchEvent(eventClick);
                                 break;
                             case YT.PlayerState.PLAYING:
                                 // ...
